@@ -49,3 +49,5 @@ if __name__ == "__main__":
 
     if D > MARGIN:
         print("Intersection 1: [{0:.3f} {1:.3f} {2:.3f}]".format(x[0], y[0], z[0]), "Intersection 2: [{0:.3f} {1:.3f} {2:.3f}]".format(x[1], y[1], z[1]))
+    else:
+        print("Intersection 1: [{0:.3f} {1:.3f} {2:.3f}]".format(x, y, z))
