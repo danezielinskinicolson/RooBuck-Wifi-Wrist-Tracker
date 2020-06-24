@@ -3,13 +3,10 @@
 import numpy as np
 
 # 2D trilateration requires 3 points
-def trilaterate2D(devices):
+def trilaterate2D(coordinates, ranges):
     # the following points
-    p = {}
-    r = {}
-    for i, data in enumerate(devices):
-        p[i] = data.coordinate
-        r[i] = data.range
+    p = coordinates
+    r = ranges
 
     e_x = (p[1] - p[0]) / np.linalg.norm(p[1] - p[0])
     i = np.dot(e_x, p[2] - p[0])
@@ -21,22 +18,15 @@ def trilaterate2D(devices):
     point = p[0] + x * e_x + y * e_y
     return point
 
-class Position():
-    def __init__(self, coordinate, range):
-        self.coordinate = coordinate
-        self.range = range
-
-
 if __name__ == "__main__":
-    Device_List = [Position(np.array((0, -3)), 3.1),
-                   Position(np.array((0, 3)), 2.9),
-                   Position(np.array((3, 0.1)), 3.0)]
+    # x y r
+    measurement = np.array([[6.6, 5.4, 9.2],
+                            [-6.0, -6.8, 10.54],
+                            [9.4, -6.7, 8.5]])
 
-    for i, data in enumerate(Device_List):
-        # print(str(i + 1) + ". COORD: %-*s  RANGE: %s" % (20, data.coordinate, data.range)) # some old version
-        print(str(i + 1) + ". COORD: {0:<20}  RANGE: {1:<15}".format(str(data.coordinate), data.range)) # new print method
-
+    for i, data in enumerate(measurement):
+        print(str(i + 1) + ". COORD: {0:<20}  RANGE: {1:<15}".format(str(measurement[i, [0, 1]]), measurement[i, 2])) # new print method
     
-    location = trilaterate2D(Device_List)
+    location = trilaterate2D(measurement[:, [0, 1]], measurement[:, 2])
     np.set_printoptions(precision=3, suppress=True)
     print("{0:.3f}, {1:.3f}".format(location[0], location[1]))

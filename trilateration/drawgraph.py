@@ -6,16 +6,15 @@ import trilaterate as tri
 
 
 if __name__ == "__main__":
+    # x y r
+    measurement = np.array([[6.6, 5.4, 9.2],
+                            [-6.0, -6.8, 10.54],
+                            [9.4, -6.7, 8.5]])
 
-    Device_List = [tri.Position(np.array((6.6, 5.4)), 9.2),
-                   tri.Position(np.array((-6.0, -6.8)), 10.54),
-                   tri.Position(np.array((9.4, -6.7)), 8.5)]
-
-    for i, data in enumerate(Device_List):
-        # print(str(i + 1) + ". COORD: %-*s  RANGE: %s" % (20, data.coordinate, data.range)) # some old version
-        print(str(i + 1) + ". COORD: {0:<20}  RANGE: {1:<15}".format(str(data.coordinate), data.range)) # new print method
-
-    location = tri.trilaterate2D(Device_List)
+    for i, data in enumerate(measurement):
+        print(str(i + 1) + ". COORD: {0:<20}  RANGE: {1:<15}".format(str(measurement[i, [0, 1]]), measurement[i, 2])) # new print method
+    
+    location = tri. trilaterate2D(measurement[:, [0, 1]], measurement[:, 2])
     np.set_printoptions(precision=3, suppress=True)
     print("{0:.3f}, {1:.3f}".format(location[0], location[1]))
 
@@ -24,8 +23,8 @@ if __name__ == "__main__":
 fig, ax = plt.subplots()
 plt.plot(location[0], location[1], 'bo')
 
-for circles in Device_List:
-    circle = plt.Circle(circles.coordinate, circles.range, color='r', fill=False)
+for circles in measurement:
+    circle = plt.Circle(circles[[0, 1]], circles[2], color='r', fill=False)
     ax.add_artist(circle)
     
 ax.grid(linestyle='--')
