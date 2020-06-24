@@ -57,7 +57,6 @@ if __name__ == "__main__":
     ax = fig.gca(projection='3d')
 
     for data in measurement:
-        print(data[[0, 1, 2]])
         drawCircle(data[[0, 1, 2]], data[-1])
 
     ax.scatter(location3D[0], location3D[1], location3D[2], color='b', s=100)
