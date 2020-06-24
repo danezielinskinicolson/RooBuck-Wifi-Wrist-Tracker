@@ -1,6 +1,6 @@
-import numpy as np
-
 # https://en.wikipedia.org/wiki/True_range_multilateration
+
+import numpy as np
 
 # 2D trilateration requires 3 points
 def trilaterate2D(devices):
@@ -10,7 +10,7 @@ def trilaterate2D(devices):
     for i, data in enumerate(devices):
         p[i] = data.coordinate
         r[i] = data.range
-    
+
     e_x = (p[1] - p[0]) / np.linalg.norm(p[1] - p[0])
     i = np.dot(e_x, p[2] - p[0])
     e_y = (p[2] - p[0] - i * e_x) / np.linalg.norm(p[2] - p[0] - i * e_x)
@@ -21,16 +21,16 @@ def trilaterate2D(devices):
     point = p[0] + x * e_x + y * e_y
     return point
 
-class position():
+class Position():
     def __init__(self, coordinate, range):
         self.coordinate = coordinate
         self.range = range
 
 
 if __name__ == "__main__":
-    Device_List = [position(np.array((3, 44.5)), 5),
-                   position(np.array((20, 19.5)), 29),
-                   position(np.array((-17, 184.5)), 145)]
+    Device_List = [Position(np.array((0, -3)), 3.1),
+                   Position(np.array((0, 3)), 2.9),
+                   Position(np.array((3, 0.1)), 3.0)]
 
     for i, data in enumerate(Device_List):
         # print(str(i + 1) + ". COORD: %-*s  RANGE: %s" % (20, data.coordinate, data.range)) # some old version
@@ -38,5 +38,5 @@ if __name__ == "__main__":
 
     
     location = trilaterate2D(Device_List)
-    np.set_printoptions(precision=3, suppress = True)
+    np.set_printoptions(precision=3, suppress=True)
     print("{0:.3f}, {1:.3f}".format(location[0], location[1]))
