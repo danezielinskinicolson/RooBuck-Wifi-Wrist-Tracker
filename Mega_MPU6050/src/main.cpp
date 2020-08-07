@@ -5,7 +5,8 @@
 //#include "MPU6050.h" // not necessary if using MotionApps include file
 
 MPU6050 mpu;
-
+StaticJsonDocument<300> storedMPU;
+JsonArray& array = storedMPU.createArray();
 #define INTERRUPT_PIN 2  // use pin 2 on Arduino Uno & most boards
 #define LED_PIN 13 // (Arduino is 13, Teensy is 11, Teensy++ is 6)
 bool blinkState = false;
