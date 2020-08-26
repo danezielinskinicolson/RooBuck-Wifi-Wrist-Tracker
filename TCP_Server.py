@@ -5,8 +5,14 @@ class Handler_TCPServer(socketserver.BaseRequestHandler):
 
     def handle(self):
         # self.request - TCP socket connected to the client
-        self.data = self.request.recv(1024).strip()
-        print("{} sent:".format(self.client_address[0]))
+        self.data = ""
+        while(True):
+            values = self.request.recv(1024).strip()
+            if len(values) < 1:
+                break
+            else:
+                self.data += str(values)
+                print("{} sent:" + str(values))    
         print(self.data)
 
         with open('ESP_1Log.txt','a') as f:

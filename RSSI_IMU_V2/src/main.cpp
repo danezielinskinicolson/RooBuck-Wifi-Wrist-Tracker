@@ -3,9 +3,16 @@
 
 #include "MPU6050_6Axis_MotionApps20.h"
 MPU6050 mpu;
+//Wifi info 
 
+const char* ssid = "The_Lair_of_Task_&_Jakiro";
+const char* password = "Divine_Rapier_330";
+
+const uint16_t port = 8007;
+const char * host = "192.168.0.9";
+String data;
 #define OUTPUT_READABLE_WORLDACCEL
-
+String tab = "   ";
 
 #define INTERRUPT_PIN 23  // use pin 2 on Arduino Uno & most boards
 #define LED_PIN 13 // (Arduino is 13, Teensy is 11, Teensy++ is 6)
@@ -52,6 +59,26 @@ void PrintValues(int Array_counter){
   Serial.print("\t time \t");
   Serial.println(timeArray[Array_counter]);  
 }
+
+//void ServerSendValues(int Array_counter, WiFiClient client){
+// String tab = "   ";
+//  String data = "aworld   " + Ax[Array_counter] + tab + Ay[Array_counter] + tab + Az[Array_counter] + tab + timeArray[Array_counter];
+//  client.print(data);  
+//}
+
+void SendData(String data){
+  WiFiClient client;
+ 
+  if (!client.connect(host, port)) {
+ 
+    Serial.println("Connection to host failed");
+ 
+    delay(1000);
+    return;
+  }
+  client.print(data);
+  client.stop();
+}
 // ================================================================
 // ===               INTERRUPT DETECTION ROUTINE                ===
 // ================================================================
@@ -61,9 +88,9 @@ void dmpDataReady() {
     mpuInterrupt = true;
 }
 
-void WifiScan_Update(){
+String WifiScan_Update(){
   Serial.println("scan start");
-
+  String ScanString = "Scan Start: ";
   // WiFi.scanNetworks will return the number of networks found
   int n = WiFi.scanNetworks();
   Serial.println("scan done");
@@ -81,9 +108,11 @@ void WifiScan_Update(){
       Serial.print(WiFi.RSSI(i));
       Serial.print(")");
       Serial.println((WiFi.encryptionType(i) == WIFI_AUTH_OPEN)?" ":"*");
+      ScanString = ScanString + tab + WiFi.SSID(i) + tab + WiFi.RSSI(i);
     }
   }
   Serial.println("");
+  return ScanString;
 }
 
 
@@ -122,7 +151,15 @@ void setup()
     WiFi.mode(WIFI_STA);
     WiFi.disconnect();
     delay(100);
-
+    
+    WiFi.begin(ssid, password);
+    while (WiFi.status() != WL_CONNECTED) {
+      delay(500);
+      Serial.println("...");
+    }
+ 
+  Serial.print("WiFi connected with IP: ");
+  Serial.println(WiFi.localIP());
     Serial.println("Setup done");
 
       // join I2C bus (I2Cdev library doesn't do this automatically)
@@ -198,13 +235,20 @@ void loop()
   Array_counter ++;
   if (millis() >= Time_counter + 30000) {
     Time_counter = millis();
-    WifiScan_Update();
+    data = "Data Start: ";
     while (Array_counter > 0){
       Array_counter = Array_counter - 1;
       PrintValues(Array_counter);
+      data = data + "V  " + Ax[Array_counter] + tab + Ay[Array_counter] + tab + Az[Array_counter] + tab + timeArray[Array_counter];
     }
-    PrintValues(Array_counter);
+    data = data + WifiScan_Update();
+    data = data + "   End";
+    SendData(data);
+    //PrintValues(Array_counter);
+    Serial.print(data);
+    Serial.print(data.length());
   }
+
   // Wait a bit before scanning again
   delay(40);
   // if programming failed, don't try to do anything
