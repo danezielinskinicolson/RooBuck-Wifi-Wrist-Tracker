@@ -12,7 +12,7 @@ const uint16_t port = 8007;
 const char * host = "192.168.0.9";
 String data;
 #define OUTPUT_READABLE_WORLDACCEL
-String tab = "   ";
+String tab = "X";
 
 #define INTERRUPT_PIN 23  // use pin 2 on Arduino Uno & most boards
 #define LED_PIN 13 // (Arduino is 13, Teensy is 11, Teensy++ is 6)
@@ -90,7 +90,7 @@ void dmpDataReady() {
 
 String WifiScan_Update(){
   Serial.println("scan start");
-  String ScanString = "Scan Start: ";
+  String ScanString = "Scan Start:";
   // WiFi.scanNetworks will return the number of networks found
   int n = WiFi.scanNetworks();
   Serial.println("scan done");
@@ -235,11 +235,11 @@ void loop()
   Array_counter ++;
   if (millis() >= Time_counter + 30000) {
     Time_counter = millis();
-    data = "Data Start: ";
+    data = "Data Start:";
     while (Array_counter > 0){
       Array_counter = Array_counter - 1;
       PrintValues(Array_counter);
-      data = data + "V  " + Ax[Array_counter] + tab + Ay[Array_counter] + tab + Az[Array_counter] + tab + timeArray[Array_counter];
+      data = data + tab + Ax[Array_counter] + tab + Ay[Array_counter] + tab + Az[Array_counter] + tab + timeArray[Array_counter];
     }
     data = data + WifiScan_Update();
     data = data + "   End";

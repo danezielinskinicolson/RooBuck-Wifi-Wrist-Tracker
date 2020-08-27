@@ -1,8 +1,9 @@
 import socketserver
 import time
 import os
+ESP_tag_counter = 0
 class Handler_TCPServer(socketserver.BaseRequestHandler):
-
+    
     def handle(self):
         # self.request - TCP socket connected to the client
         self.data = ""
@@ -14,8 +15,8 @@ class Handler_TCPServer(socketserver.BaseRequestHandler):
                 self.data += str(values)
                 print("{} sent:" + str(values))    
         print(self.data)
-
-        with open('ESP_1Log.txt','a') as f:
+        nameValue = 'ESP_Logs\ESP_Log_.txt'
+        with open(nameValue,'a') as f:
 #            filedata.append(time.strftime('%X %x %Z'))
             f.write(time.strftime('%X %x %Z') +  "   " +  str(self.data) + "\n")
         # just send back ACK for data arrival confirmation
