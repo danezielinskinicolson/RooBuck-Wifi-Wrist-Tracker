@@ -9,7 +9,7 @@ import re
 def Extract_Scans(LogAddress = 'ESP_Logs\ESP_Log_.txt'):
     mylines = []                             # Declare an empty list named mylines.
     with open (LogAddress, 'rt') as myfile: # Open lorem.txt for reading text data.
-        for myline in myfile:                # For each line, stored as myline,
+        for myline in myfile:                # For each line, stored as mylin/e,
             mylines.append(myline)           # add its contents to mylines.
     
     
