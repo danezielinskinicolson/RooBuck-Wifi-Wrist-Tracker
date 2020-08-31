@@ -65,7 +65,7 @@ def reject_outliers(data, m=2):
 
 
 def GridData(Extracted_scans):
-    bigGrid = [ [0] * 6 for _ in range(5)]
+    bigGrid = [ [0] * 11 for _ in range(10)]
     for i in Extracted_scans:
         #print([int(i[4][0])],[int(i[4][1])])
         if int(i[4][1]) <= 5 :
@@ -119,7 +119,7 @@ def InterpolateGridRSSI(corners,zcorners,dist):
 
     return [x,y,zi]
 
-def Plot_RSSI_Map(SquareGridz):
+def Plot_RSSI_Map(SquareGridz,corner):
     X = []
     Y = []
     Zi = []
@@ -177,28 +177,37 @@ def Plot_RSSI_Map(SquareGridz):
     plt.figure(figsize=(10, 15))
     fig, ax = plt.subplots()
     grid = ax.pcolormesh(X, Y, Zi)
+    if corner == 0:
+        ax.scatter(2.4,0.5)
+    if corner == 1:
+        ax.scatter(0.5,0.5)
+    if corner == 2:
+        ax.scatter(0.5,4.4)
+    if corner == 3:
+        ax.scatter(2.4,4.4)
+        
     #ax.scatter(xcorners, ycorners, c=zcorners, s=200)
     fig.colorbar(grid)
     ax.margins(0.05)
     
+    plt.savefig('Fingerprinting_Garage' + str(corner) +'.png')
     plt.show()
-
 e = Extract_Scans(LogAddress = 'ESP_Log_Calibration.txt')
 
 CornerGrid = GridData(e)
-SquareGrida = [ [0] * 5 for _ in range(4)]
-SquareGridb = [ [0] * 5 for _ in range(4)]
-SquareGridc = [ [0] * 5 for _ in range(4)]
-SquareGridd = [ [0] * 5 for _ in range(4)]
+SquareGrida = [ [0] * 5 for _ in range(9)] # Konrads Phone
+SquareGridb = [ [0] * 5 for _ in range(9)] # Fionas Phone
+SquareGridc = [ [0] * 5 for _ in range(9)] # Danes phone
+SquareGridd = [ [0] * 5 for _ in range(9)] # Kayleys phone
 
 SquareGrida = InterpolatedGrid(CornerGrid,SquareGrida,0.5,0)
 SquareGridb = InterpolatedGrid(CornerGrid,SquareGridb,0.5,1)
 SquareGridc = InterpolatedGrid(CornerGrid,SquareGridc,0.5,2)
 SquareGridd = InterpolatedGrid(CornerGrid,SquareGridd,0.5,3)
 
-Plot_RSSI_Map(SquareGrida)
-Plot_RSSI_Map(SquareGridb)
-Plot_RSSI_Map(SquareGridc)
-Plot_RSSI_Map(SquareGridd)
+Plot_RSSI_Map(SquareGrida,0)
+Plot_RSSI_Map(SquareGridb,1)
+Plot_RSSI_Map(SquareGridc,2)
+Plot_RSSI_Map(SquareGridd,3)
 
 
