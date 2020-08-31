@@ -8,6 +8,7 @@ MPU6050 mpu;
 StaticJsonDocument<300> storedMPU;
 JsonArray& array = storedMPU.createArray();
 #define INTERRUPT_PIN 2  // use pin 2 on Arduino Uno & most boards
+#define BUTTON_PIN 3 // temporary button pin
 #define LED_PIN 13 // (Arduino is 13, Teensy is 11, Teensy++ is 6)
 bool blinkState = false;
 
@@ -52,13 +53,32 @@ void update_IMU(){
         mpu.dmpGetYawPitchRoll(ypr, &q, &gravity);
     }
 }
+// ----------------------------------------------------------------
+volatile bool shutdown = false;     // indicates whether MPU interrupt pin has gone high
+void buttonPress() {
+    int time = 0;
+    while(digitalRead(BUTTON_PIN == low)){
+        pause(500);
+        time = time + 1;
+    }
+    if(time < 3) {
+        helpMessage();
+    } else {
+        shutdown = true;
+    }
+}
+void helpMessage(){
+    // UM....
+}
 // ================================================================
 // ===                      INITIAL SETUP                       ===
 // ================================================================
 
 void setup() {
+    // The pin must be pullup to keep power on
+    pinMode(BUTTON_PIN, PULLUP_INPUT);
+    
     // join I2C bus (I2Cdev library doesn't do this automatically)
-
     Wire.begin();
     Wire.setClock(400000); // 400kHz I2C clock. Comment this line if having compilation difficulties
 
@@ -126,6 +146,9 @@ void loop() {
         Ax.add(ypr[0] * 180/M_PI);
         Ay.add(ypr[1] * 180/M_PI);
         Az.add(ypr[2] * 180/M_PI);
+    }
+    else if(shutdown == 1) {
+        pinMode(BUTTON_PIN, OUTPUT);
     }
 
     delay(500);
