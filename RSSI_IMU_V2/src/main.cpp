@@ -8,6 +8,7 @@ MPU6050 mpu;
 const char* ssid = "The_Lair_of_Task_&_Jakiro";
 const char* password = "Divine_Rapier_330";
 
+
 const uint16_t port = 8007;
 const char * host = "192.168.0.9";
 String data;
@@ -16,6 +17,9 @@ String tab = "X";
 
 #define INTERRUPT_PIN 23  // use pin 2 on Arduino Uno & most boards
 #define LED_PIN 13 // (Arduino is 13, Teensy is 11, Teensy++ is 6)
+
+#define ON_PIN 18
+
 bool blinkState = false;
 
 // MPU control/status vars
@@ -145,8 +149,9 @@ void MPU_Update() {
 
 void setup()
 {
+    pinMode(ON_PIN, OUTPUT);
+    digitalWrite(ON_PIN, HIGH);
     Serial.begin(115200);
-
     // Set WiFi to station mode and disconnect from an AP if it was previously connected
     WiFi.mode(WIFI_STA);
     WiFi.disconnect();
@@ -233,7 +238,7 @@ void loop()
   MPU_Update();
   addValues(Array_counter, aaWorld.x, aaWorld.y, aaWorld.z);
   Array_counter ++;
-  if (millis() >= Time_counter + 30000) {
+  if (millis() >= Time_counter + 5000) {
     Time_counter = millis();
     data = "Data Start:";
     while (Array_counter > 0){

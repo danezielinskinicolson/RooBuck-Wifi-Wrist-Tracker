@@ -99,7 +99,7 @@ def InterpolatedGrid(CornerGrid,SquareGrid,dist,Router):
     return SquareGrid
 
 def InterpolateGridRSSI(corners,zcorners,dist):
-    x,y = np.mgrid[int(corners[0][0])*dist:int(corners[1][0])*dist:0.05, int(corners[0][1])*dist:int(corners[2][1])*dist:0.05]
+    x,y = np.mgrid[int(corners[0][0])*dist:int(corners[1][0])*dist:0.01, int(corners[0][1])*dist:int(corners[2][1])*dist:0.01]
     
     xcorners = x[0,0], x[0, -1], x[-1, 0], x[-1, -1]
     ycorners = y[0,0], y[0, -1], y[-1, 0], y[-1, -1]
