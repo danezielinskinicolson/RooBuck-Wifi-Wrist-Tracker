@@ -17,7 +17,7 @@ String tab = "X";
 
 #define INTERRUPT_PIN 23  // use pin 2 on Arduino Uno & most boards
 #define LED_PIN 13 // (Arduino is 13, Teensy is 11, Teensy++ is 6)
-
+#define LED_BUILTIN 2
 #define ON_PIN 18
 
 bool blinkState = false;
@@ -41,6 +41,7 @@ float ypr[3];           // [yaw, pitch, roll]   yaw/pitch/roll container and gra
 
 
 unsigned long Time_counter = 0;
+unsigned long Off_counter = 0;
 
 int16_t Ax[800];
 int16_t Ay[800];
@@ -149,8 +150,9 @@ void MPU_Update() {
 
 void setup()
 {
-    pinMode(ON_PIN, OUTPUT);
-    digitalWrite(ON_PIN, HIGH);
+    pinMode(ON_PIN, INPUT_PULLUP);
+    //digitalWrite(ON_PIN, HIGH);
+    pinMode (LED_BUILTIN, OUTPUT);
     Serial.begin(115200);
     // Set WiFi to station mode and disconnect from an AP if it was previously connected
     WiFi.mode(WIFI_STA);
@@ -253,7 +255,21 @@ void loop()
     Serial.print(data);
     Serial.print(data.length());
   }
-
+  Off_counter = millis();
+  while (ON_PIN == LOW){
+    digitalWrite(LED_BUILTIN, HIGH);
+    if (Off_counter + 3000 <= millis()){
+      //turnoff
+      digitalWrite(LED_BUILTIN, HIGH);
+      pinMode(ON_PIN,INPUT);
+    }
+  }
+  if (Off_counter + 3000 <= millis()){
+      //turnoff
+    digitalWrite(LED_BUILTIN, HIGH);
+    pinMode(ON_PIN,INPUT);
+  }
+  digitalWrite(LED_BUILTIN, LOW);
   // Wait a bit before scanning again
   delay(40);
   // if programming failed, don't try to do anything
