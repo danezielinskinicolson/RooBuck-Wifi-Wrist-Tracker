@@ -174,9 +174,13 @@ def Plot_RSSI_Map(SquareGridz,corner):
     #zcorners = [4, 2, 3, 4]
     
     #####Plotting grid
-    plt.figure(figsize=(10, 15))
+    plt.figure(figsize=(10, 10))
     fig, ax = plt.subplots()
     grid = ax.pcolormesh(X, Y, Zi)
+    ax.get_yaxis().labelpad = 70
+    ax.set_ylabel('RSSI', rotation=270)
+    ax.set_xlabel('Distance (m)')
+    ax.yaxis.set_label_position("right")
     if corner == 0:
         ax.scatter(2.4,0.5)
     if corner == 1:
@@ -189,7 +193,7 @@ def Plot_RSSI_Map(SquareGridz,corner):
     #ax.scatter(xcorners, ycorners, c=zcorners, s=200)
     fig.colorbar(grid)
     ax.margins(0.05)
-    
+    plt.gca().set_aspect('equal', adjustable='box')
     plt.savefig('Fingerprinting_Garage' + str(corner) +'.png')
     plt.show()
 e = Extract_Scans(LogAddress = 'ESP_Log_Calibration.txt')

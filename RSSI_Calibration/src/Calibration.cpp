@@ -4,8 +4,8 @@
 
 //Wifi info 
 
-const char* ssid = "The_Lair_of_Task_&_Jakiro";
-const char* password = "Divine_Rapier_330";
+const char* ssid = "Network";
+const char* password = "Password";
 
 const uint16_t port = 8007;
 const char * host = "192.168.0.9";

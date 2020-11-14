@@ -49,12 +49,13 @@ def Extract_Scans(LogAddress = 'ESP_Logs\ESP_Log_.txt'):
         counter = 0
         NetworkData = re.split("\'b\'|X|\'b\'X|X\'b\'",NetworkData)
         for k in NetworkData:
-            if counter == 0:
-                SSIDData.append(k)
-            elif counter == 1:
-                RSSIData.append(int(k))
-                counter = -1
-            counter = counter + 1
+            if k != '':
+                if counter == 0:
+                    SSIDData.append(k)
+                elif counter == 1:
+                    RSSIData.append(int(k))
+                    counter = -1
+                counter = counter + 1
         
         TimeData = TimeData.split(" AUS Eastern Standard Time   b\'")[0]
         TimeData = TimeData.split(" ")

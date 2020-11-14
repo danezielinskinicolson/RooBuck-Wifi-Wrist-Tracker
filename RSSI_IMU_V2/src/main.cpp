@@ -1,13 +1,18 @@
 #include "WiFi.h"
 #include "I2Cdev.h"
+#include "WiFiAP.h"
+
 
 #include "MPU6050_6Axis_MotionApps20.h"
 MPU6050 mpu;
 //Wifi info 
 
 const char* ssid = "The_Lair_of_Task_&_Jakiro";
+const char *ssidAP = "TAG_0001_ID";
 const char* password = "Divine_Rapier_330";
+String TAG_ID = "TAG_0001_ID";
 
+WiFiServer server(80);
 
 const uint16_t port = 8007;
 const char * host = "192.168.0.9";
@@ -21,6 +26,7 @@ String tab = "X";
 #define ON_PIN 18
 
 bool blinkState = false;
+bool APFLAG = false;
 
 // MPU control/status vars
 bool dmpReady = false;  // set true if DMP init was successful
@@ -46,12 +52,18 @@ unsigned long Off_counter = 0;
 int16_t Ax[800];
 int16_t Ay[800];
 int16_t Az[800];
+float yaw[800];
+float pitch[800];
+float roll[800];
 unsigned long timeArray[800];
 int Array_counter = 0;
-void addValues(int Array_counter, int16_t AxWorld,int16_t AyWorld,int16_t AzWorld){
+void addValues(int Array_counter, int16_t AxWorld,int16_t AyWorld,int16_t AzWorld,float y, float p, float r){
   Ax[Array_counter] = AxWorld;
   Ay[Array_counter] = AyWorld;
   Az[Array_counter] = AzWorld;
+  yaw[Array_counter] = y;
+  pitch[Array_counter] = p;
+  roll[Array_counter] = r;
   timeArray[Array_counter] = millis();
 }
 void PrintValues(int Array_counter){
@@ -70,6 +82,14 @@ void PrintValues(int Array_counter){
 //  String data = "aworld   " + Ax[Array_counter] + tab + Ay[Array_counter] + tab + Az[Array_counter] + tab + timeArray[Array_counter];
 //  client.print(data);  
 //}
+void HostAP(){
+  WiFi.softAP(ssidAP);
+  IPAddress myIP = WiFi.softAPIP();
+  Serial.print("AP IP address: ");
+  Serial.println(myIP);
+  server.begin();
+  delay(10000);
+}
 
 void SendData(String data){
   WiFiClient client;
@@ -130,6 +150,7 @@ void MPU_Update() {
             // display initial world-frame acceleration, adjusted to remove gravity
             // and rotated based on known orientation from quaternion
             mpu.dmpGetQuaternion(&q, fifoBuffer);
+            mpu.dmpGetYawPitchRoll(ypr, &q, &gravity);
             mpu.dmpGetAccel(&aa, fifoBuffer);
             mpu.dmpGetGravity(&gravity, &q);
             mpu.dmpGetLinearAccel(&aaReal, &aa, &gravity);
@@ -144,6 +165,19 @@ void MPU_Update() {
     }
 }
 
+void WifiConnect(){
+      // Set WiFi to station mode and disconnect from an AP if it was previously connected
+  WiFi.mode(WIFI_STA);
+  WiFi.disconnect();
+  delay(100);
+    
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(50);
+    Serial.println("...");
+  }
+}
+
 // ================================================================
 // ===                      INITIAL SETUP                       ===
 // ================================================================
@@ -154,20 +188,11 @@ void setup()
     //digitalWrite(ON_PIN, HIGH);
     pinMode (LED_BUILTIN, OUTPUT);
     Serial.begin(115200);
-    // Set WiFi to station mode and disconnect from an AP if it was previously connected
-    WiFi.mode(WIFI_STA);
-    WiFi.disconnect();
-    delay(100);
-    
-    WiFi.begin(ssid, password);
-    while (WiFi.status() != WL_CONNECTED) {
-      delay(500);
-      Serial.println("...");
-    }
- 
+
+  WifiConnect();
   Serial.print("WiFi connected with IP: ");
   Serial.println(WiFi.localIP());
-    Serial.println("Setup done");
+
 
       // join I2C bus (I2Cdev library doesn't do this automatically)
     #if I2CDEV_IMPLEMENTATION == I2CDEV_ARDUINO_WIRE
@@ -238,15 +263,17 @@ void setup()
 void loop()
 {
   MPU_Update();
-  addValues(Array_counter, aaWorld.x, aaWorld.y, aaWorld.z);
+  addValues(Array_counter, aaWorld.x, aaWorld.y, aaWorld.z,ypr[0],ypr[1],ypr[2]);
   Array_counter ++;
-  if (millis() >= Time_counter + 5000) {
+  if ((millis() >= Time_counter + 10000) && (APFLAG == false)) {
+    WifiConnect();
     Time_counter = millis();
     data = "Data Start:";
+    data = data + tab + TAG_ID + tab;
     while (Array_counter > 0){
       Array_counter = Array_counter - 1;
       PrintValues(Array_counter);
-      data = data + tab + Ax[Array_counter] + tab + Ay[Array_counter] + tab + Az[Array_counter] + tab + timeArray[Array_counter];
+      data = data + tab + Ax[Array_counter] + tab + Ay[Array_counter] + tab + Az[Array_counter] + tab+ yaw[Array_counter] + tab + pitch[Array_counter] + tab + roll[Array_counter] + tab + timeArray[Array_counter];
     }
     data = data + WifiScan_Update();
     data = data + "   End";
@@ -254,7 +281,15 @@ void loop()
     //PrintValues(Array_counter);
     Serial.print(data);
     Serial.print(data.length());
+    WiFi.disconnect();
+    APFLAG = true;
+  } else if((millis() >= Time_counter + 10000) && (APFLAG == true) ){
+    HostAP();
+    APFLAG = false;
+    WiFi.disconnect();
   }
+
+
   Off_counter = millis();
   while (ON_PIN == LOW){
     digitalWrite(LED_BUILTIN, HIGH);
