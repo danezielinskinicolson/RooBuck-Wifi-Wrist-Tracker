@@ -8,13 +8,17 @@ class Handler_TCPServer(socketserver.BaseRequestHandler):
         # self.request - TCP socket connected to the client
         self.data = ""
         while(True):
-            values = self.request.recv(1024).strip()
+            values = self.request.recv(4000).strip()
             if len(values) < 1:
                 break
             else:
                 self.data += str(values)
-                print("{} sent:" + str(values))    
+                print("{} sent:" + str(values))
+                r=time.strftime('%X')
+                print("sending" + r)
+                self.request.send((r.encode()))
         print(self.data)
+
         nameValue = 'ESP_Logs\ESP_Log_.txt'
         with open(nameValue,'a') as f:
 #            filedata.append(time.strftime('%X %x %Z'))

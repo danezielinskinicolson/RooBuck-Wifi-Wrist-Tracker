@@ -19,11 +19,13 @@ const char * host = "192.168.0.9";
 String data;
 #define OUTPUT_READABLE_WORLDACCEL
 String tab = "X";
+char c;
 
 #define INTERRUPT_PIN 23  // use pin 2 on Arduino Uno & most boards
-#define LED_PIN 13 // (Arduino is 13, Teensy is 11, Teensy++ is 6)
+//#define LED_PIN 13 // (Arduino is 13, Teensy is 11, Teensy++ is 6)
 #define LED_BUILTIN 2
-#define ON_PIN 18
+#define ON_PIN 13
+
 
 bool blinkState = false;
 bool APFLAG = false;
@@ -46,24 +48,32 @@ float euler[3];         // [psi, theta, phi]    Euler angle container
 float ypr[3];           // [yaw, pitch, roll]   yaw/pitch/roll container and gravity vector
 
 
+unsigned long Time_counter_IMU = 0;
 unsigned long Time_counter = 0;
 unsigned long Off_counter = 0;
 
-int16_t Ax[800];
-int16_t Ay[800];
-int16_t Az[800];
-float yaw[800];
-float pitch[800];
-float roll[800];
-unsigned long timeArray[800];
+
+long buttonTimer = 0;
+long longPressTime = 2500;
+
+boolean buttonActive = false;
+boolean longPressActive = false;
+
+int16_t Ax[7000];
+int16_t Ay[7000];
+//int16_t Az[4000];
+float yaw[7000];
+//float pitch[400];
+//float roll[4000];
+unsigned long timeArray[7000];
 int Array_counter = 0;
 void addValues(int Array_counter, int16_t AxWorld,int16_t AyWorld,int16_t AzWorld,float y, float p, float r){
   Ax[Array_counter] = AxWorld;
   Ay[Array_counter] = AyWorld;
-  Az[Array_counter] = AzWorld;
+  //Az[Array_counter] = AzWorld;
   yaw[Array_counter] = y;
-  pitch[Array_counter] = p;
-  roll[Array_counter] = r;
+  //pitch[Array_counter] = p;
+  //roll[Array_counter] = r;
   timeArray[Array_counter] = millis();
 }
 void PrintValues(int Array_counter){
@@ -72,23 +82,75 @@ void PrintValues(int Array_counter){
   Serial.print("\t");
   Serial.print(Ay[Array_counter]);
   Serial.print("\t");
-  Serial.print(Az[Array_counter]);
+  //Serial.print(Az[Array_counter]);
   Serial.print("\t time \t");
   Serial.println(timeArray[Array_counter]);  
 }
+String getValue(String data, char separator, int index)
+{
+    int found = 0;
+    int strIndex[] = { 0, -1 };
+    int maxIndex = data.length() - 1;
 
+    for (int i = 0; i <= maxIndex && found <= index; i++) {
+        if (data.charAt(i) == separator || i == maxIndex) {
+            found++;
+            strIndex[0] = strIndex[1] + 1;
+            strIndex[1] = (i == maxIndex) ? i+1 : i;
+        }
+    }
+    return found > index ? data.substring(strIndex[0], strIndex[1]) : "";
+}
 //void ServerSendValues(int Array_counter, WiFiClient client){
 // String tab = "   ";
 //  String data = "aworld   " + Ax[Array_counter] + tab + Ay[Array_counter] + tab + Az[Array_counter] + tab + timeArray[Array_counter];
 //  client.print(data);  
 //}
 void HostAP(){
+  WiFi.mode(WIFI_AP_STA);
   WiFi.softAP(ssidAP);
   IPAddress myIP = WiFi.softAPIP();
   Serial.print("AP IP address: ");
   Serial.println(myIP);
-  server.begin();
   delay(10000);
+  WiFi.softAPdisconnect(true);
+}
+
+void ButtonCheck(){
+  if (digitalRead(ON_PIN) == HIGH) {
+
+    if (buttonActive == false) {
+
+      buttonActive = true;
+      buttonTimer = millis();
+
+    }
+
+    if ((millis() - buttonTimer > longPressTime) && (longPressActive == false)) {
+
+      longPressActive = true;
+      Serial.println("Button held");
+
+    }
+
+  } else {
+
+    if (buttonActive == true) {
+
+      if (longPressActive == true) {
+
+        longPressActive = false;
+        Serial.println("TURNING OFF");
+
+      } else {
+
+      }
+
+      buttonActive = false;
+
+    }
+
+  }
 }
 
 void SendData(String data){
@@ -102,7 +164,22 @@ void SendData(String data){
     return;
   }
   client.print(data);
+  Serial.println(" ");
+  Serial.println("Data Recived is:");
+  while(!client.available()){
+   delay(1);
+  }
+  Serial.println("recig");
+  String line = client.readString();
+  String Hour = getValue(line, ':', 0);
+  String Min = getValue(line, ':', 1);
+  String Sec = getValue(line, ':', 2);
+  Serial.println(Hour);
+  Serial.println(Min);
+  Serial.println(Sec);
   client.stop();
+  Serial.println(" ");
+  Serial.println("End of data recieved");
 }
 // ================================================================
 // ===               INTERRUPT DETECTION ROUTINE                ===
@@ -155,6 +232,7 @@ void MPU_Update() {
             mpu.dmpGetGravity(&gravity, &q);
             mpu.dmpGetLinearAccel(&aaReal, &aa, &gravity);
             mpu.dmpGetLinearAccelInWorld(&aaWorld, &aaReal, &q);
+            delay(10);
             //Serial.print("aworld\t");
             //Serial.print(aaWorld.x);
             //Serial.print("\t");
@@ -167,15 +245,19 @@ void MPU_Update() {
 
 void WifiConnect(){
       // Set WiFi to station mode and disconnect from an AP if it was previously connected
-  WiFi.mode(WIFI_STA);
+  detachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN));
   WiFi.disconnect();
+  WiFi.softAPdisconnect(true);
+  WiFi.mode(WIFI_STA);
   delay(100);
     
   WiFi.begin(ssid, password);
   while (WiFi.status() != WL_CONNECTED) {
-    delay(50);
+    delay(100);
     Serial.println("...");
   }
+  Serial.println("CONNECTED");
+  pinMode(INTERRUPT_PIN, INPUT);
 }
 
 // ================================================================
@@ -184,9 +266,8 @@ void WifiConnect(){
 
 void setup()
 {
-    pinMode(ON_PIN, INPUT_PULLUP);
-    //digitalWrite(ON_PIN, HIGH);
-    pinMode (LED_BUILTIN, OUTPUT);
+    pinMode(ON_PIN, INPUT);
+
     Serial.begin(115200);
 
   WifiConnect();
@@ -256,15 +337,19 @@ void setup()
         Serial.println(F(")"));
     }
 
-    // configure LED for output
-    pinMode(LED_PIN, OUTPUT);
 }
 
 void loop()
 {
-  MPU_Update();
-  addValues(Array_counter, aaWorld.x, aaWorld.y, aaWorld.z,ypr[0],ypr[1],ypr[2]);
-  Array_counter ++;
+  ButtonCheck();
+  if (millis() >= Time_counter_IMU + 150){
+    Time_counter_IMU = millis();
+    MPU_Update();
+    addValues(Array_counter, aaWorld.x, aaWorld.y, aaWorld.z,ypr[0],ypr[1],ypr[2]);
+    Array_counter ++;
+    //PrintValues(Array_counter);
+  }
+
   if ((millis() >= Time_counter + 10000) && (APFLAG == false)) {
     WifiConnect();
     Time_counter = millis();
@@ -272,8 +357,9 @@ void loop()
     data = data + tab + TAG_ID + tab;
     while (Array_counter > 0){
       Array_counter = Array_counter - 1;
-      PrintValues(Array_counter);
-      data = data + tab + Ax[Array_counter] + tab + Ay[Array_counter] + tab + Az[Array_counter] + tab+ yaw[Array_counter] + tab + pitch[Array_counter] + tab + roll[Array_counter] + tab + timeArray[Array_counter];
+      //PrintValues(Array_counter);
+      data = data + tab + Ax[Array_counter] + tab + Ay[Array_counter] + tab+ yaw[Array_counter]  +  tab + timeArray[Array_counter];
+      //data = data + tab + Ax[Array_counter] + tab + Ay[Array_counter] + tab + Az[Array_counter] + tab+ yaw[Array_counter] + tab + pitch[Array_counter] + tab + roll[Array_counter] + tab + timeArray[Array_counter];
     }
     data = data + WifiScan_Update();
     data = data + "   End";
@@ -281,33 +367,11 @@ void loop()
     //PrintValues(Array_counter);
     Serial.print(data);
     Serial.print(data.length());
-    WiFi.disconnect();
-    APFLAG = true;
+
+    //APFLAG = true;
   } else if((millis() >= Time_counter + 10000) && (APFLAG == true) ){
-    HostAP();
-    APFLAG = false;
     WiFi.disconnect();
+    HostAP();
+    APFLAG = false;   
   }
-
-
-  Off_counter = millis();
-  while (ON_PIN == LOW){
-    digitalWrite(LED_BUILTIN, HIGH);
-    if (Off_counter + 3000 <= millis()){
-      //turnoff
-      digitalWrite(LED_BUILTIN, HIGH);
-      pinMode(ON_PIN,INPUT);
-    }
-  }
-  if (Off_counter + 3000 <= millis()){
-      //turnoff
-    digitalWrite(LED_BUILTIN, HIGH);
-    pinMode(ON_PIN,INPUT);
-  }
-  digitalWrite(LED_BUILTIN, LOW);
-  // Wait a bit before scanning again
-  delay(40);
-  // if programming failed, don't try to do anything
-
-
 }
