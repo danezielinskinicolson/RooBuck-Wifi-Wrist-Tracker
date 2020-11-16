@@ -7,24 +7,24 @@
 MPU6050 mpu;
 //Wifi info 
 
-const char* ssid = "The_Lair_of_Task_&_Jakiro";
+const char* ssid = "Test_00";
 const char *ssidAP = "TAG_0001_ID";
-const char* password = "Divine_Rapier_330";
+const char* password = "12233qsx";
 String TAG_ID = "TAG_0001_ID";
 
 WiFiServer server(80);
 
 const uint16_t port = 8007;
-const char * host = "192.168.0.9";
+const char * host = "192.168.43.248";
 String data;
 #define OUTPUT_READABLE_WORLDACCEL
 String tab = "X";
 char c;
 
 #define INTERRUPT_PIN 23  // use pin 2 on Arduino Uno & most boards
-//#define LED_PIN 13 // (Arduino is 13, Teensy is 11, Teensy++ is 6)
-#define LED_BUILTIN 2
-#define ON_PIN 13
+#define LED_PIN 13 // (Arduino is 13, Teensy is 11, Teensy++ is 6)
+#define POWER_PIN 25
+#define ON_PIN 19
 
 
 bool blinkState = false;
@@ -112,12 +112,10 @@ void HostAP(){
   IPAddress myIP = WiFi.softAPIP();
   Serial.print("AP IP address: ");
   Serial.println(myIP);
-  delay(10000);
-  WiFi.softAPdisconnect(true);
 }
 
 void ButtonCheck(){
-  if (digitalRead(ON_PIN) == HIGH) {
+  if (digitalRead(POWER_PIN) == LOW) {
 
     if (buttonActive == false) {
 
@@ -141,7 +139,9 @@ void ButtonCheck(){
 
         longPressActive = false;
         Serial.println("TURNING OFF");
-
+        pinMode(POWER_PIN, OUTPUT);
+        digitalWrite(POWER_PIN, LOW);
+        digitalWrite(ON_PIN, HIGH);
       } else {
 
       }
@@ -166,7 +166,9 @@ void SendData(String data){
   client.print(data);
   Serial.println(" ");
   Serial.println("Data Recived is:");
-  while(!client.available()){
+  unsigned long tempclock = millis();
+
+  while(!client.available() && tempclock + 5000 >= millis()) {
    delay(1);
   }
   Serial.println("recig");
@@ -174,6 +176,10 @@ void SendData(String data){
   String Hour = getValue(line, ':', 0);
   String Min = getValue(line, ':', 1);
   String Sec = getValue(line, ':', 2);
+  if (Hour == "66"){
+    digitalWrite(ON_PIN, HIGH);
+  }
+
   Serial.println(Hour);
   Serial.println(Min);
   Serial.println(Sec);
@@ -250,13 +256,16 @@ void WifiConnect(){
   WiFi.softAPdisconnect(true);
   WiFi.mode(WIFI_STA);
   delay(100);
-    
+  ///######## Important #######
+    //maybe add another condition to while loop to check if ip address is not 0.0.0.0
   WiFi.begin(ssid, password);
-  while (WiFi.status() != WL_CONNECTED) {
+  delay(2000);
+  while (WiFi.status() != WL_CONNECTED && WiFi.localIP().toString() == "0.0.0.0") {
     delay(100);
     Serial.println("...");
   }
   Serial.println("CONNECTED");
+  Serial.println(WiFi.localIP());
   pinMode(INTERRUPT_PIN, INPUT);
 }
 
@@ -266,9 +275,10 @@ void WifiConnect(){
 
 void setup()
 {
-    pinMode(ON_PIN, INPUT);
-
-    Serial.begin(115200);
+  pinMode(ON_PIN, OUTPUT);
+  pinMode(POWER_PIN, INPUT_PULLUP);
+  Serial.begin(115200);
+  //digitalWrite(POWER_PIN, HIGH);
 
   WifiConnect();
   Serial.print("WiFi connected with IP: ");
@@ -350,7 +360,7 @@ void loop()
     //PrintValues(Array_counter);
   }
 
-  if ((millis() >= Time_counter + 10000) && (APFLAG == false)) {
+  if ((millis() >= Time_counter + 15000) && (APFLAG == false)) {
     WifiConnect();
     Time_counter = millis();
     data = "Data Start:";
@@ -368,8 +378,8 @@ void loop()
     Serial.print(data);
     Serial.print(data.length());
 
-    //APFLAG = true;
-  } else if((millis() >= Time_counter + 10000) && (APFLAG == true) ){
+    APFLAG = true;
+  } else if((millis() >= Time_counter + 15000) && (APFLAG == true) ){
     WiFi.disconnect();
     HostAP();
     APFLAG = false;   
