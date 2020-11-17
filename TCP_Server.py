@@ -37,8 +37,8 @@ class Handler_TCPServer(socketserver.BaseRequestHandler):
         #self.request.sendall("RD".encode())
 
 if __name__ == "__main__":
-    HOST, PORT = "192.168.43.248", 8007
-    #HOST, PORT = "192.168.0.9", 8007
+    #HOST, PORT = "192.168.43.248", 8007
+    HOST, PORT = "192.168.0.9", 8007
 
     tcp_server = socketserver.TCPServer((HOST, PORT), Handler_TCPServer)
 

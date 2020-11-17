@@ -7,15 +7,25 @@
 MPU6050 mpu;
 //Wifi info 
 
-const char* ssid = "Test_00";
+//const char* ssid = "Test_00";
+//const char* password = "12233qsx";
+const char* ssid = "The_Lair_of_Task_&_Jakiro";
+const char* password = "Divine_Rapier_330";
+
 const char *ssidAP = "TAG_0001_ID";
-const char* password = "12233qsx";
 String TAG_ID = "TAG_0001_ID";
+
+String PollingEvents[6] = {"13:00:00","14:43:00","15:00:00","16:00:00","17:00:00","18:00:00"};
+int Hour;
+int Min;
+int Sec;
 
 WiFiServer server(80);
 
 const uint16_t port = 8007;
-const char * host = "192.168.43.248";
+const char * host = "192.168.0.9";
+//const char * host = "192.168.43.248";
+
 String data;
 #define OUTPUT_READABLE_WORLDACCEL
 String tab = "X";
@@ -50,6 +60,8 @@ float ypr[3];           // [yaw, pitch, roll]   yaw/pitch/roll container and gra
 
 unsigned long Time_counter_IMU = 0;
 unsigned long Time_counter = 0;
+unsigned long Time_counter_Polling_Event = 86400000;
+unsigned long Current_time_in_millis = 0;
 unsigned long Off_counter = 0;
 
 
@@ -67,6 +79,48 @@ float yaw[7000];
 //float roll[4000];
 unsigned long timeArray[7000];
 int Array_counter = 0;
+
+String getValue(String data, char separator, int index)
+{
+    int found = 0;
+    int strIndex[] = { 0, -1 };
+    int maxIndex = data.length() - 1;
+
+    for (int i = 0; i <= maxIndex && found <= index; i++) {
+        if (data.charAt(i) == separator || i == maxIndex) {
+            found++;
+            strIndex[0] = strIndex[1] + 1;
+            strIndex[1] = (i == maxIndex) ? i+1 : i;
+        }
+    }
+    return found > index ? data.substring(strIndex[0], strIndex[1]) : "";
+}
+
+unsigned long Calculate_micros_polling(String PollingEvents[6],int Hour, int Min, int Sec){
+
+  unsigned long MicrosVal =86400000;
+  unsigned long tempMicros =0;
+  for (int i =0; i < 6; i++){
+    int PollingHour = getValue(PollingEvents[i], ':', 0).toInt();
+    int PollingMin = getValue(PollingEvents[i], ':', 1).toInt();
+    int PollingSec = getValue(PollingEvents[i], ':', 2).toInt();
+    unsigned long currentMillis = (Hour)*3600000 + (Min)*60000 + (Sec)*1000;
+    unsigned long PollMillis = (PollingHour)*3600000 + (PollingMin)*60000 + (PollingSec)*1000;
+    Serial.println(currentMillis);
+    Serial.println(PollMillis);
+    if (PollMillis > currentMillis){
+      tempMicros = PollMillis - currentMillis;
+      Serial.println(tempMicros);
+    }
+    if ((tempMicros < MicrosVal) && tempMicros > 0){
+      MicrosVal = tempMicros;
+      Serial.println(MicrosVal);
+    }
+  }
+  Serial.println(MicrosVal + millis());
+  return MicrosVal + millis();
+}
+
 void addValues(int Array_counter, int16_t AxWorld,int16_t AyWorld,int16_t AzWorld,float y, float p, float r){
   Ax[Array_counter] = AxWorld;
   Ay[Array_counter] = AyWorld;
@@ -85,21 +139,6 @@ void PrintValues(int Array_counter){
   //Serial.print(Az[Array_counter]);
   Serial.print("\t time \t");
   Serial.println(timeArray[Array_counter]);  
-}
-String getValue(String data, char separator, int index)
-{
-    int found = 0;
-    int strIndex[] = { 0, -1 };
-    int maxIndex = data.length() - 1;
-
-    for (int i = 0; i <= maxIndex && found <= index; i++) {
-        if (data.charAt(i) == separator || i == maxIndex) {
-            found++;
-            strIndex[0] = strIndex[1] + 1;
-            strIndex[1] = (i == maxIndex) ? i+1 : i;
-        }
-    }
-    return found > index ? data.substring(strIndex[0], strIndex[1]) : "";
 }
 //void ServerSendValues(int Array_counter, WiFiClient client){
 // String tab = "   ";
@@ -173,11 +212,14 @@ void SendData(String data){
   }
   Serial.println("recig");
   String line = client.readString();
-  String Hour = getValue(line, ':', 0);
-  String Min = getValue(line, ':', 1);
-  String Sec = getValue(line, ':', 2);
-  if (Hour == "66"){
+  Hour = getValue(line, ':', 0).toInt();
+  Min = getValue(line, ':', 1).toInt();
+  Sec = getValue(line, ':', 2).toInt();
+  if (Hour == 66){
     digitalWrite(ON_PIN, HIGH);
+  } else{
+    Current_time_in_millis = (Hour)*3600000 + (Min)*60000 + (Sec)*1000;
+    Time_counter_Polling_Event = Calculate_micros_polling(PollingEvents,Hour,Min,Sec);
   }
 
   Serial.println(Hour);
@@ -204,6 +246,7 @@ String WifiScan_Update(){
   Serial.println("scan done");
   if (n == 0) {
     Serial.println("no networks found");
+    ScanString = "NONE";
   } else {
     Serial.print(n);
     Serial.println(" networks found");
@@ -360,7 +403,7 @@ void loop()
     //PrintValues(Array_counter);
   }
 
-  if ((millis() >= Time_counter + 15000) && (APFLAG == false)) {
+  if ((millis() >= Time_counter + 15000) && ((millis()< Time_counter_Polling_Event)||APFLAG == false)) {
     WifiConnect();
     Time_counter = millis();
     data = "Data Start:";
@@ -371,17 +414,27 @@ void loop()
       data = data + tab + Ax[Array_counter] + tab + Ay[Array_counter] + tab+ yaw[Array_counter]  +  tab + timeArray[Array_counter];
       //data = data + tab + Ax[Array_counter] + tab + Ay[Array_counter] + tab + Az[Array_counter] + tab+ yaw[Array_counter] + tab + pitch[Array_counter] + tab + roll[Array_counter] + tab + timeArray[Array_counter];
     }
-    data = data + WifiScan_Update();
+    if (WifiScan_Update() != "NONE"){
+      data = data + WifiScan_Update();
+    } else{
+      APFLAG = true;
+    }
+    
     data = data + "   End";
     SendData(data);
     //PrintValues(Array_counter);
     Serial.print(data);
     Serial.print(data.length());
 
-    APFLAG = true;
-  } else if((millis() >= Time_counter + 15000) && (APFLAG == true) ){
+  } else if((millis() >= Time_counter_Polling_Event)&& (APFLAG == true)){
+//   Serial.println("current time is");
+//    Serial.println((millis() + Current_time_in_millis));
+//    Serial.println("Poll time is");
+//    Serial.println(Time_counter_Polling_Event);
     WiFi.disconnect();
     HostAP();
+    Time_counter = millis();
+    Serial.println("ACCESS POINT MODE");
     APFLAG = false;   
   }
 }
