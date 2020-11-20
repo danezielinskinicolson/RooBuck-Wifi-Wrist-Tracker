@@ -7,13 +7,13 @@
 MPU6050 mpu;
 //Wifi info 
 
-//const char* ssid = "Test_00";
-//const char* password = "12233qsx";
-const char* ssid = "The_Lair_of_Task_&_Jakiro";
-const char* password = "Divine_Rapier_330";
+const char* ssid = "Test_00";
+const char* password = "12233qsx";
+//const char* ssid = "The_Lair_of_Task_&_Jakiro";
+//const char* password = "Divine_Rapier_330";
 
-const char *ssidAP = "TAG_0001_ID";
-String TAG_ID = "TAG_0001_ID";
+const char *ssidAP = "TAG_0002_ID";
+String TAG_ID = "TAG_0002_ID";
 
 String PollingEvents[6] = {"13:00:00","14:43:00","15:00:00","16:00:00","17:00:00","18:00:00"};
 int Hour;
@@ -23,8 +23,8 @@ int Sec;
 WiFiServer server(80);
 
 const uint16_t port = 8007;
-const char * host = "192.168.0.9";
-//const char * host = "192.168.43.248";
+//const char * host = "192.168.0.9";
+const char * host = "192.168.43.248";
 
 String data;
 #define OUTPUT_READABLE_WORLDACCEL
@@ -140,11 +140,7 @@ void PrintValues(int Array_counter){
   Serial.print("\t time \t");
   Serial.println(timeArray[Array_counter]);  
 }
-//void ServerSendValues(int Array_counter, WiFiClient client){
-// String tab = "   ";
-//  String data = "aworld   " + Ax[Array_counter] + tab + Ay[Array_counter] + tab + Az[Array_counter] + tab + timeArray[Array_counter];
-//  client.print(data);  
-//}
+
 void HostAP(){
   WiFi.mode(WIFI_AP_STA);
   WiFi.softAP(ssidAP);
@@ -180,7 +176,7 @@ void ButtonCheck(){
         Serial.println("TURNING OFF");
         pinMode(POWER_PIN, OUTPUT);
         digitalWrite(POWER_PIN, LOW);
-        digitalWrite(ON_PIN, HIGH);
+        digitalWrite(ON_PIN, LOW);
       } else {
 
       }
@@ -216,7 +212,7 @@ void SendData(String data){
   Min = getValue(line, ':', 1).toInt();
   Sec = getValue(line, ':', 2).toInt();
   if (Hour == 66){
-    digitalWrite(ON_PIN, HIGH);
+    digitalWrite(ON_PIN, LOW);
   } else{
     Current_time_in_millis = (Hour)*3600000 + (Min)*60000 + (Sec)*1000;
     Time_counter_Polling_Event = Calculate_micros_polling(PollingEvents,Hour,Min,Sec);
@@ -229,9 +225,6 @@ void SendData(String data){
   Serial.println(" ");
   Serial.println("End of data recieved");
 }
-// ================================================================
-// ===               INTERRUPT DETECTION ROUTINE                ===
-// ================================================================
 
 volatile bool mpuInterrupt = false;     // indicates whether MPU interrupt pin has gone high
 void dmpDataReady() {
@@ -303,7 +296,8 @@ void WifiConnect(){
     //maybe add another condition to while loop to check if ip address is not 0.0.0.0
   WiFi.begin(ssid, password);
   delay(2000);
-  while (WiFi.status() != WL_CONNECTED && WiFi.localIP().toString() == "0.0.0.0") {
+  unsigned long tempTimer = millis();
+  while (WiFi.status() != WL_CONNECTED && WiFi.localIP().toString() == "0.0.0.0" && millis() <= tempTimer +5000 ) {
     delay(100);
     Serial.println("...");
   }
@@ -312,13 +306,10 @@ void WifiConnect(){
   pinMode(INTERRUPT_PIN, INPUT);
 }
 
-// ================================================================
-// ===                      INITIAL SETUP                       ===
-// ================================================================
-
 void setup()
 {
   pinMode(ON_PIN, OUTPUT);
+  digitalWrite(ON_PIN, HIGH);
   pinMode(POWER_PIN, INPUT_PULLUP);
   Serial.begin(115200);
   //digitalWrite(POWER_PIN, HIGH);
@@ -400,7 +391,6 @@ void loop()
     MPU_Update();
     addValues(Array_counter, aaWorld.x, aaWorld.y, aaWorld.z,ypr[0],ypr[1],ypr[2]);
     Array_counter ++;
-    //PrintValues(Array_counter);
   }
 
   if ((millis() >= Time_counter + 15000) && ((millis()< Time_counter_Polling_Event)||APFLAG == false)) {
@@ -410,9 +400,7 @@ void loop()
     data = data + tab + TAG_ID + tab;
     while (Array_counter > 0){
       Array_counter = Array_counter - 1;
-      //PrintValues(Array_counter);
       data = data + tab + Ax[Array_counter] + tab + Ay[Array_counter] + tab+ yaw[Array_counter]  +  tab + timeArray[Array_counter];
-      //data = data + tab + Ax[Array_counter] + tab + Ay[Array_counter] + tab + Az[Array_counter] + tab+ yaw[Array_counter] + tab + pitch[Array_counter] + tab + roll[Array_counter] + tab + timeArray[Array_counter];
     }
     if (WifiScan_Update() != "NONE"){
       data = data + WifiScan_Update();
@@ -422,15 +410,10 @@ void loop()
     
     data = data + "   End";
     SendData(data);
-    //PrintValues(Array_counter);
     Serial.print(data);
     Serial.print(data.length());
 
   } else if((millis() >= Time_counter_Polling_Event)&& (APFLAG == true)){
-//   Serial.println("current time is");
-//    Serial.println((millis() + Current_time_in_millis));
-//    Serial.println("Poll time is");
-//    Serial.println(Time_counter_Polling_Event);
     WiFi.disconnect();
     HostAP();
     Time_counter = millis();

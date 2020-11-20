@@ -19,7 +19,7 @@ def trilaterate2D(NetworkLocations, NetworkDistances):
     y2 = NetworkLocations[1][1]
     y3 = NetworkLocations[2][1]
     Points = []
-    for i in range(0,len(NetworkDistances[0])):
+    for i in range(0,min([len(NetworkDistances[0]),len(NetworkDistances[1]),len(NetworkDistances[2])])):
         r1 = NetworkDistances[0][i]
         r2 = NetworkDistances[1][i]
         r3 = NetworkDistances[2][i]
@@ -33,16 +33,18 @@ def circleIntersection(x1,x2,x3,y1,y2,y3,r1,r2,r3):
     return [x,y]
 
 def GetPosition(inputFile = 'ESP_Logs\ESP_Log_Prtot3Test.txt'):
-    NetworkIDs = ["Test_00","Test_10","Test_02","Test_11"]
+    NetworkIDs = ["uniwide","UNSW Guest","eduroam","Global_Students"]
     NetworkLocations = [[0,0],[0,2.5],[4.5,0],[4.5,2.5]]
     NetworkRSSIs = [[],[],[],[]]
     NetworkDistances = [[],[],[],[]]
     Points = []
+    PosTimes= []
     Scansest = ED.Extract_Scans(inputFile)
     
     counter = 0
     for k in NetworkIDs:
         for i in Scansest:
+            PosTimes.append(i[6][0])
             for j in range(0,len(i[4])):
                 if i[4][j] == k:
                     NetworkRSSIs[counter].append(i[5][j])
@@ -61,7 +63,7 @@ def GetPosition(inputFile = 'ESP_Logs\ESP_Log_Prtot3Test.txt'):
         d = RSSI_C.RSSI_to_Distance(k,A_0 = A0)
         NetworkDistances[counter] = d
         counter = counter + 1
-        
+    print(len(NetworkDistances[0]))
     Points = trilaterate2D(NetworkLocations, NetworkDistances)
-    return Points
+    return [Points,PosTimes]
 Points = GetPosition()

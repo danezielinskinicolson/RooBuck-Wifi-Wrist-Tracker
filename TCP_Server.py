@@ -2,6 +2,7 @@ import socketserver
 import time
 import os
 
+import TwoDPosition as DP2
 import keyboard  # using module keyboard
 ESP_tag_counter = 0
 class Handler_TCPServer(socketserver.BaseRequestHandler):
@@ -29,16 +30,26 @@ class Handler_TCPServer(socketserver.BaseRequestHandler):
                 self.request.send((r.encode()))
                 print(self.data)
 
-        nameValue = 'ESP_Logs\ESP_Log_.txt'
+        nameValue = 'ESP_Logs\ESP_Log_Prtot3Test.txt'
+        PositionData = 'ESP_Logs\ESP_Log_Prtot3Test_DATA.txt'
+        
         with open(nameValue,'a') as f:
 #            filedata.append(time.strftime('%X %x %Z'))
             f.write(time.strftime('%X %x %Z') +  "   " +  str(self.data) + "\n")
         # just send back ACK for data arrival confirmation
         #self.request.sendall("RD".encode())
-
+#        Points = DP2.GetPosition()
+#        with open(PositionData,'w') as f:
+##            filedata.append(time.strftime('%X %x %Z'))
+#            print(Points)
+#            for j in Points:
+#                print(j)
+#                f.write(str(j[0]) + "," + str(j[1])+ '\n' )
+        # just send back ACK for data arrival confirmation
+        #self.request.sendall("RD".encode())
 if __name__ == "__main__":
-    #HOST, PORT = "192.168.43.248", 8007
-    HOST, PORT = "192.168.0.9", 8007
+    HOST, PORT = "192.168.43.248", 8007
+    #HOST, PORT = "192.168.0.9", 8007
 
     tcp_server = socketserver.TCPServer((HOST, PORT), Handler_TCPServer)
 

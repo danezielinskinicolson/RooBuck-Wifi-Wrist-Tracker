@@ -6,7 +6,7 @@ Created on Thu Aug 27 12:48:18 2020
 """
 import re
 
-def Extract_Scans(LogAddress = 'ESP_Logs\ESP_Log_.txt'):
+def Extract_Scans(LogAddress = 'ESP_Logs\ESP_Log_Prtot3Test.txt'):
     mylines = []                             # Declare an empty list named mylines.
     with open (LogAddress, 'rt') as myfile: # Open lorem.txt for reading text data.
         for myline in myfile:                # For each line, stored as mylin/e,
@@ -20,12 +20,16 @@ def Extract_Scans(LogAddress = 'ESP_Logs\ESP_Log_.txt'):
     #    i = i.replace("   \'b\'","   ")
         i = i.replace("\'b\'","")
         TimeData = i.split("Data Start:X")[0]
-        Imu = i.split("Data Start:X")[1].split("Scan Start:")[0]
+        TagID=Imu = i.split("Data Start:X")[1].split("Scan Start:")[0].split("_IDXX")[0]
+        print(TagID)
+        Imu = i.split("Data Start:X")[1].split("Scan Start:")[0].split("_IDXX")[1]
+        print(Imu)
         NetworkData = i.split("Scan Start:X")[1]
         NetworkData = NetworkData.split("   End")[0]
     
         
         ImuSplit = re.split("\'b\'|X|\'b\'X|X\'b\'",Imu)
+        print(ImuSplit)
         counter = 0
         Ax = []
         Ay = []
@@ -37,7 +41,7 @@ def Extract_Scans(LogAddress = 'ESP_Logs\ESP_Log_.txt'):
             elif counter == 1:
                 Ay.append(int(j))
             elif counter == 2:
-                Az.append(int(j))
+                Az.append(float(j))
             elif counter == 3:
                 IMUTimeSignature.append(int(j))
                 counter = -1
